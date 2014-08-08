@@ -1,11 +1,10 @@
 {
   "name": "AEM URL Helper",
   "short_name": "AEM URL Helper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Helps you disable WCM and the Content Finder on CQ pages",
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "scripts": ["background.js"]
   },
   "page_action" : {},
   "permissions" : [
