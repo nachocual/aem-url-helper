@@ -17,5 +17,10 @@
     "48": "aem_green_48.png",
     "128": "aem_green_128.png"
   },
+  "options_page": "options.html",
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": true
+  },
   "manifest_version": 2
 }

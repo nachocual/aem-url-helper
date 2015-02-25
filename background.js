@@ -83,19 +83,23 @@ chrome.pageAction.onClicked.addListener(function(tab) {
   var mode = checkMode(url);
   if (mode == Mode.RED) {
     var key = getAuthoringUIModeKey(tabId);
-    chrome.storage.local.get(key, function(items) {
-      var authoringUIMode = items[key];
-      if (authoringUIMode == undefined) {
-        // TODO: let the user select the default
-        authoringUIMode = AuthoringUIMode.CLASSIC;
-      }
-      var prefix = '/editor.html/content';
-      if (authoringUIMode != AuthoringUIMode.TOUCH) {
-        prefix = '/cf#/content';
-      }
-      url = url.replace('/content', prefix);
-      url = url.replace(/&wcmmode=disabled|\?wcmmode=disabled/gi, '');
-      chrome.tabs.update(tabId, { url: url });
+    chrome.storage.sync.get({
+      defaultAuthoringUIMode: AuthoringUIMode.CLASSIC
+    }, function(items) {
+      var defaultAuthoringUIMode = items.defaultAuthoringUIMode;
+      chrome.storage.local.get(key, function(items) {
+        var authoringUIMode = items[key];
+        if (authoringUIMode == undefined) {
+          authoringUIMode = defaultAuthoringUIMode;
+        }
+        var prefix = '/editor.html/content';
+        if (authoringUIMode != AuthoringUIMode.TOUCH) {
+          prefix = '/cf#/content';
+        }
+        url = url.replace('/content', prefix);
+        url = url.replace(/&wcmmode=disabled|\?wcmmode=disabled/gi, '');
+        chrome.tabs.update(tabId, { url: url });
+      });
     });
   } else if (mode == Mode.YELLOW) {
     if(url.indexOf('?') == -1) {
