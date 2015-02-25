@@ -1,9 +1,37 @@
+var Mode = {
+  GREEN : {value: 0, name: "green", cf: true, wcm: true},
+  YELLOW : {value: 1, name: "yellow", cf: false, wcm: true},
+  RED : {value: 1, name: "red", cf: false, wcm: false}
+};
+
+function checkMode(url) {
+  if (url.indexOf('/cf') == -1 && url.indexOf('wcmmode=disabled') != -1) {
+    return Mode.RED;
+  } else if (url.indexOf('/cf') == -1  && url.indexOf('wcmmode=disabled') == -1) {
+    return Mode.YELLOW;
+  } else {
+    return Mode.GREEN;
+  }
+}
+
+function setPageActionIconToMode(tabId, mode) {
+  var variant = mode != undefined && mode.name != undefined ? mode.name : "none";
+  var path = {19: "aem_" + variant + "_19.png", 38: "aem_" + variant + "_38.png"};
+  chrome.pageAction.setIcon({path: path, tabId: tabId});
+}
+
+function setPageActionTitle(tabId, title) {
+  title = title != undefined ? title :  "Unable to identify AEM page mode";
+  chrome.pageAction.setTitle({title: title, tabId: tabId});
+}
+
 chrome.webNavigation.onCommitted.addListener(
   function(details) {
     if (details.frameId == 0) {
-      chrome.pageAction.setIcon({path: {19: "aem_none_19.png", 38: "aem_none_38.png"}, tabId: details.tabId});
-      chrome.pageAction.setTitle({title: "Loading AEM page...", tabId: details.tabId});
-      chrome.pageAction.show(details.tabId);
+      var tabId = details.tabId;
+      chrome.pageAction.setIcon({path: {19: "aem_none_19.png", 38: "aem_none_38.png"}, tabId: tabId});
+      chrome.pageAction.setTitle({title: "Loading AEM page...", tabId: tabId});
+      chrome.pageAction.show(tabId);
     }
   },
   { url: [{ pathPrefix: '/cf' }, { pathPrefix: '/content' }] }
@@ -12,39 +40,43 @@ chrome.webNavigation.onCommitted.addListener(
 chrome.webNavigation.onCompleted.addListener(
   function(details) {
     if (details.frameId == 0) {
-      if (details.url.indexOf('/cf') == -1 && details.url.indexOf('wcmmode=disabled') != -1) {
-        chrome.pageAction.setIcon({path: {19: "aem_red_19.png", 38: "aem_red_38.png"}, tabId: details.tabId});
-        chrome.pageAction.setTitle({title: "AEM page (WCM is disabled)", tabId: details.tabId});
-      } else if (details.url.indexOf('/cf') == -1  && details.url.indexOf('wcmmode=disabled') == -1) {
-        chrome.pageAction.setIcon({path: {19: "aem_yellow_19.png", 38: "aem_yellow_38.png"}, tabId: details.tabId});
-        chrome.pageAction.setTitle({title: "AEM page (CF is disabled)", tabId: details.tabId});
-      } else {
-        chrome.pageAction.setIcon({path: {19: "aem_green_19.png", 38: "aem_green_38.png"}, tabId: details.tabId});
-        chrome.pageAction.setTitle({title: "AEM page", tabId: details.tabId});
+      var tabId = details.tabId;
+      var mode = checkMode(details.url);
+      setPageActionIconToMode(tabId, mode);
+      var title;
+      if (mode == Mode.RED) {
+        title = "AEM page (CF and WCM is disabled)";
+      } else if (mode == Mode.YELLOW) {
+        title = "AEM page (CF is disabled)";
+      } else if (mode == Mode.GREEN) {
+        title = "AEM page";
       }
+      setPageActionTitle(tabId, title);
     }
   },
   { url: [{ pathPrefix: '/cf' }, { pathPrefix: '/content' }] }
 );
 
 chrome.pageAction.onClicked.addListener(function(tab) {
-  chrome.pageAction.setIcon({path: {19: "aem_none_19.png", 38: "aem_none_38.png"}, tabId: tab.id});
-  chrome.pageAction.setTitle({title: "Loading AEM page...", tabId: tab.id});
-  if (tab.url.indexOf('/cf') == -1 && tab.url.indexOf('wcmmode=disabled') != -1) {
-    console.log('CF added and WCMMode removed');
-    var url = tab.url;
+  var tabId = tab.id;
+  var url = tab.url;
+  // console.log(tabId);
+  setPageActionIconToMode(tabId);
+  setPageActionTitle(tabId, "Loading AEM page...");
+  var mode = checkMode(url);
+  if (mode == Mode.RED) {
     url = url.replace('/content', '/cf#/content');
     url = url.replace(/&wcmmode=disabled|\?wcmmode=disabled/gi, '');
-    chrome.tabs.update(tab.id, { url: url });
-  } else if (tab.url.indexOf('/cf') == -1  && tab.url.indexOf('wcmmode=disabled') == -1) {
-    console.log('WCMmode added');
-    if(tab.url.indexOf('?') == -1) {
-      chrome.tabs.update(tab.id, {url: tab.url + "?wcmmode=disabled"});
+    chrome.tabs.update(tabId, { url: url });
+  } else if (mode == Mode.YELLOW) {
+    if(url.indexOf('?') == -1) {
+      chrome.tabs.update(tabId, {url: url + "?wcmmode=disabled"});
     } else {
-      chrome.tabs.update(tab.id, {url: tab.url + "&wcmmode=disabled"});
+      chrome.tabs.update(tabId, {url: url + "&wcmmode=disabled"});
     }
+  } else if (mode == Mode.GREEN) {
+    chrome.tabs.update(tabId, { url: url.replace('/cf#', '') });
   } else {
-    console.log('CF removed');
-    chrome.tabs.update(tab.id, { url: tab.url.replace('/cf#', '') });
+    setPageActionTitle(tabId);
   }
 });
