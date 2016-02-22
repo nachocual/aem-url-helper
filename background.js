@@ -103,7 +103,12 @@ chrome.pageAction.onClicked.addListener(function(tab) {
     });
   } else if (mode == Mode.YELLOW) {
     if(url.indexOf('?') == -1) {
-      chrome.tabs.update(tabId, {url: url + "?wcmmode=disabled"});
+      if(url.indexOf('#') == -1) {
+        chrome.tabs.update(tabId, {url: url + "?wcmmode=disabled"});
+      } else {
+        var urlSplit = url.split("#");
+        chrome.tabs.update(tabId, {url: urlSplit[0] + "?wcmmode=disabled#" + urlSplit[1]});
+      }
     } else {
       chrome.tabs.update(tabId, {url: url + "&wcmmode=disabled"});
     }
