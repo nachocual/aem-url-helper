@@ -5,12 +5,15 @@
   "description": "Helps you disable WCM and the Content Finder on AEM (CQ) pages",
   "background": {
     "scripts": ["background.js"],
-  	"persistent": false
+    "persistent": false
   },
   "page_action" : {},
   "permissions" : [
+    "activeTab",
     "webNavigation",
-    "storage"
+    "storage",
+    "cookies",
+    "*://*/"
   ],
   "icons": {
     "16": "aem_green_16.png",
